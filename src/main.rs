@@ -119,15 +119,35 @@ fn get_clipboard(
         }
     }
 
-    let (target_atom, content_type) = target_names
+    let (target_atom, content_type) = if let Some((atom, name)) =
+        target_names.iter().find(|(_, n)| n == "UTF8_STRING")
+    {
+        &(*atom, name.clone())
+    } else if let Some((atom, name)) = target_names
         .iter()
-        .find(|(_, n)| {
-            !matches!(
-                n.as_str(),
-                "TARGETS" | "TIMESTAMP" | "SAVE_TARGETS" | "MULTIPLE"
-            )
-        })
-        .unwrap();
+        .find(|(_, n)| n.starts_with("image/png"))
+    {
+        &(*atom, name.clone())
+    } else if let Some((atom, name)) = target_names
+        .iter()
+        .find(|(_, n)| n.starts_with("image/jpeg"))
+    {
+        &(*atom, name.clone())
+    } else if let Some((atom, name)) = target_names.iter().find(|(_, n)| n.starts_with("image/")) {
+        &(*atom, name.clone())
+    } else if let Some((atom, name)) = target_names.iter().find(|(_, n)| n == "STRING") {
+        &(*atom, name.clone())
+    } else {
+        target_names
+            .iter()
+            .find(|(_, n)| {
+                !matches!(
+                    n.as_str(),
+                    "TARGETS" | "TIMESTAMP" | "SAVE_TARGETS" | "MULTIPLE"
+                )
+            })
+            .unwrap()
+    };
 
     conn.convert_selection(window, clipboard, *target_atom, property, timestamp)?;
     conn.flush()?;
